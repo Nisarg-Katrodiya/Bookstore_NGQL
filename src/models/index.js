@@ -35,6 +35,7 @@ const UserType = new GraphQLObjectType({
     name: 'User',
     fields: ( ) => ({
         id: { type: GraphQLID },
+        token: { type: GraphQLString },
         firstname: { type: GraphQLString },
         lastname: { type: GraphQLString },
         email: { type: GraphQLString },
@@ -123,6 +124,23 @@ const RootQuery = new GraphQLObjectType({
 const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
+        loginUser: {
+            type: UserType,
+            args: {
+                email: { type: GraphQLString },
+                password: { type: GraphQLString },
+            },
+            async resolve(parent, args){
+                let user = await User.findOne(args);
+                const token = user.generateAuthToken();
+                const createdUser =  user.toJSON();
+                const returnData = {
+                    token,
+                    ...createdUser,
+                };
+                return token && returnData;
+            }
+        },
         addUser: {
             type: UserType,
             args: {
@@ -132,15 +150,22 @@ const Mutation = new GraphQLObjectType({
                 password: { type: GraphQLString },
                 role: { type: GraphQLString },
             },
-            resolve(parent, args){
+            async resolve(parent, args){
                 let newUser = new User({
                     firstname: args.firstname,
                     lastname: args.lastname,
                     email: args.email,
                     password: args.password,
-                    role: args.role,
+                    role: args.role || 'user',
                 });
-                return newUser.save();
+                const token = newUser.generateAuthToken();
+                let createdUser = await newUser.save();
+                createdUser = createdUser.toJSON();
+                const returnData = {
+                    token,
+                    ...createdUser,
+                };
+                return returnData;
             }
         },
         addBook: {
