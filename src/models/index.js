@@ -2,6 +2,7 @@ const graphql = require('graphql');
 const {Product} = require('./product.model');
 const {User} = require('../models/user.model');
 const {Cart} = require('../models/cart.model');
+const {upload} = require('../utils/image.upload');
 
 const {
     GraphQLObjectType,
@@ -171,14 +172,37 @@ const Mutation = new GraphQLObjectType({
         addBook: {
             type: BookType,
             args: {
-                image: { type: new GraphQLNonNull(GraphQLString) },
+                image: { type: GraphQLString },
                 name: { type: new GraphQLNonNull(GraphQLString) },
                 category: { type: new GraphQLNonNull(GraphQLString) },
                 description: { type: GraphQLString },
                 price: { type: new GraphQLNonNull(GraphQLInt) },
                 user: { type: new GraphQLNonNull(GraphQLID) },
             },
-            resolve(parent, args){
+            async resolve(parent, args){
+                console.log("🚀 ~ file: index.js ~ line 182 ~ resolve ~ args", args)
+                const string = args.image.replace(/^data:\w+\/\w+;base64,/, "");
+                if (typeof string === 'Array') {
+                    let y = 0;
+                    if (string.split(-2) === "==") y = 2;
+                    else if (string.split(-1) === "=") y = 1;
+                    else y = 3;
+                    const KBs = string.length * (3 / 4) - y;
+                    const dataEncode = new Buffer.from(string, "base64");
+                    const type = args.attach.split(";")[0].split(":")[1];
+                    const imageData = {
+                        mimetype: type,
+                        buffer: dataEncode,
+                        fileName: args.fileName,
+                        fileSize: KBs,
+                    };
+                    files.push(imageData);
+                    result = await Promise.all(
+                        files.map((imageData) => upload(imageData, "message"))
+                    );
+                } else {
+
+                }
                 let book = new Product({
                     image: args.image,
                     name: args.name,

@@ -9,7 +9,8 @@ module.exports = function(app) {
   // gzip compression
   app.use(express.json());
   // parse requests of content-type - application/x-www-form-urlencoded, application/json
-  app.use(bodyParser.json(), bodyParser.urlencoded({ extended: true }));
+  app.use(bodyParser.json({limit: '100mb'}));
+  app.use(bodyParser.urlencoded({limit: '100mb', extended: true}));
   // secure apps by setting HTTP headers
   app.use(helmet());
   // gzip compression
